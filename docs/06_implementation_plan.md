@@ -22,10 +22,14 @@
   * `config.json`의 중앙 포털 URL 및 보안 토큰을 읽어 `targets`를 동기화하고 측정을 시작하는 Checker 데몬의 진입점.
 * **[NEW] [checker/runner.go](file:///h:/lee/go-watchdog/checker/runner.go):**
   * 중앙 API(`GET /api/checker/targets`)로 타겟을 주기적으로 Fetch하고, 로컬 Go 루틴을 통해 가용성 측정 후 결과를 중앙 API(`POST /api/checker/report`)로 비동기 벌크 리포트하는 스케줄링 러너 엔진.
+* **[NEW] [checker/config.json](file:///h:/lee/go-watchdog/checker/config.json):**
+  * Checker 노드 전용 로컬 설정 파일 (중앙 웹 서버 URL 및 `X-Checker-Token` 설정값 보관).
 
-### 2.2 [Next.js 웹 포털] 데이터 및 라이브러리 레이어 (`h:/lee/watchdog-hq/src/lib/`)
+### 2.2 [Next.js 웹 포털] 데이터 및 라이브러리 레이어 (`h:/lee/watchdog-hq/`)
 * **[NEW] [db.ts](file:///h:/lee/watchdog-hq/src/lib/db.ts):**
   * PostgreSQL 풀(Connection Pool)을 초기화하고 쿼리 실행을 돕는 `pg` 라이브러리 연동 헬퍼 모듈.
+* **[NEW] [init.sql](file:///h:/lee/watchdog-hq/scripts/init.sql):**
+  * PostgreSQL 데이터베이스에 테이블 스키마(users, subscriptions, targets, logs) 및 복합 인덱스를 최초 적재할 데이터 마이그레이션 스크립트.
 
 ### 2.3 [Next.js 웹 포털] 백엔드 API 레이어 (`h:/lee/watchdog-hq/src/app/api/`)
 * **[NEW] [route.ts (targets)](file:///h:/lee/watchdog-hq/src/app/api/checker/targets/route.ts):**
@@ -43,9 +47,13 @@
 * **[NEW] [RegisterModal.tsx](file:///h:/lee/watchdog-hq/src/components/RegisterModal.tsx):**
   * 어드민 유저가 신규 헬스체크 대상을 입력할 수 있도록 띄워주는 슬라이드 형태의 글래스모피즘 모달 컴포넌트.
 
-### 2.5 [Next.js 웹 포털] 콘솔 대시보드 페이지 레이어 (`h:/lee/watchdog-hq/src/app/dashboard/`)
+### 2.5 [Next.js 웹 포털] 콘솔 대시보드 페이지 레이어 (`h:/lee/watchdog-hq/src/app/`)
 * **[NEW] [page.tsx](file:///h:/lee/watchdog-hq/src/app/dashboard/page.tsx):**
   * 탭 메뉴를 통해 서버 모니터링과 API 헬스체크를 넘나들 수 있는 메인 관제 센터 뷰.
+* **[MODIFY] [layout.tsx](file:///h:/lee/watchdog-hq/src/app/layout.tsx):**
+  * 디자인 가이드에 정의된 미래적 감각의 구글 폰트 **Outfit**(제목용) 및 **Inter**(본문용) 주입 및 메타데이터 정의.
+* **[MODIFY] [globals.css](file:///h:/lee/watchdog-hq/src/app/globals.css):**
+  * Aurora Glow(배경 블러 광원 효과), 글래스모피즘 변수, 펄스 파동 애니메이션 스타일시트 정의 이식.
 
 ---
 
