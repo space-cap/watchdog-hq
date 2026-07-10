@@ -1,26 +1,27 @@
 # [구현 계획서] watchdog-hq: 통합 구현 계획서
 
-본 문서는 상용 SaaS 가용성 모니터링 서비스 `watchdog-hq`의 웹 포털(Next.js) 구축과 분산 측정 엔진 `watchdog-server`(기존 `go-watchdog/server`)의 리팩토링을 아우르는 최종 통합 구현 계획서입니다.
+본 문서는 상용 SaaS 가용성 모니터링 서비스 `watchdog-hq`의 웹 포털(Next.js) 구축과 분산 측정 엔진 `watchdog-checker`(기존 `server`는 보존하고 신규 독립 폴더 `checker`에 개발) 구축을 위한 최종 통합 구현 계획서입니다.
 
 ---
 
 ## 1. 개요 및 구현 범위
 
 * **웹 포털 (watchdog-hq):** 회원 로그인, 요금제 구독 처리(Stripe), 가용성 설정 관리 및 외부 Go Checker 데이터 보고 수신, 권한 제어 및 마스킹 대시보드 개발.
-* **측정 노드 (go-watchdog/server ➡️ watchdog-server 리팩토링):** 로컬 DB(SQLite) 및 웹 서버 코드를 완전 제거하고, 중앙 Next.js API와 연동하여 감시 대상을 폴링하고 측정 결과를 벌크로 보고하는 초경량 가용성 수집 데몬으로 개조.
+* **측정 노드 (go-watchdog/checker/ [신설]):** 
+  * 기존 단독 설치형 서버(`go-watchdog/server`)의 소스 코드는 **훼손 없이 원본 그대로 보존**합니다.
+  * 대신, SaaS 전용으로 작동할 초경량 **`checker` 모듈**을 별도의 독립 폴더에 완전히 신규 개발하여 분산형 수집기로 사용합니다.
 
 ---
 
 ## 2. 생성 및 수정 파일 목록 (Proposed File Changes)
 
-### 2.1 [Go Checker] 측정 엔진 리팩토링 (`h:/lee/go-watchdog/`)
-* **[DELETE] `db.go`, `handler.go`, `notifier.go`:**
-  * 로컬 SQLite 연동, 웹 API 라우팅 및 개별 알림 모듈을 제거합니다. (해당 역할은 모두 Next.js 서버로 위임)
-* **[MODIFY] [server/health_runner.go](file:///h:/lee/go-watchdog/server/health_runner.go):**
-  * 스케줄러가 DB 대신 중앙 Next.js API(`GET /api/checker/targets`)를 호출하여 모니터링할 최신 리스트를 가져오도록 수정.
-  * 결과를 로컬 DB에 쓰지 않고, REST API(`POST /api/checker/report`)를 통해 중앙 서버로 벌크 전송하도록 리팩토링.
-* **[MODIFY] [server/main.go](file:///h:/lee/go-watchdog/server/main.go):**
-  * 불필요한 웹 UI 서빙 및 API 바인딩을 제거하고, 순수 백그라운드 Checker 데몬으로만 실행되도록 메인 함수 정리.
+### 2.1 [Go Checker] 독립 수집기 신설 (`h:/lee/go-watchdog/`)
+기존 `server/` 코드는 원본 그대로 보존하며, 아래 신규 디렉토리 및 파일을 추가하여 Checker 데몬을 구축합니다.
+
+* **[NEW] [checker/main.go](file:///h:/lee/go-watchdog/checker/main.go):**
+  * `config.json`의 중앙 포털 URL 및 보안 토큰을 읽어 `targets`를 동기화하고 측정을 시작하는 Checker 데몬의 진입점.
+* **[NEW] [checker/runner.go](file:///h:/lee/go-watchdog/checker/runner.go):**
+  * 중앙 API(`GET /api/checker/targets`)로 타겟을 주기적으로 Fetch하고, 로컬 Go 루틴을 통해 가용성 측정 후 결과를 중앙 API(`POST /api/checker/report`)로 비동기 벌크 리포트하는 스케줄링 러너 엔진.
 
 ### 2.2 [Next.js 웹 포털] 데이터 및 라이브러리 레이어 (`h:/lee/watchdog-hq/src/lib/`)
 * **[NEW] [db.ts](file:///h:/lee/watchdog-hq/src/lib/db.ts):**
@@ -52,7 +53,7 @@
 
 ### 3.1 수집 노드 연동 (Checker Integration) 검증
 1. **Go Checker ↔ Next.js 로컬 통신 테스트:**
-   * 개조된 Go Checker 데몬을 실행하고, Next.js 개발 서버(`3088` 포트)와 정상적으로 토큰 인증 규격(`X-Checker-Token`) 하에서 대상 동기화 및 보고 통신이 에러 없이 주기적으로 도는지 검증.
+   * `checker/` 하위에 새로 구성된 Go Checker 데몬을 실행하고, Next.js 개발 서버(`3088` 포트)와 정상적으로 토큰 인증 규격(`X-Checker-Token`) 하에서 대상 동기화 및 보고 통신이 에러 없이 주기적으로 도는지 검증.
 2. **보안 확인:**
    * 헤더에 잘못된 토큰을 실어 전송했을 때 `401 Unauthorized` 에러가 응답에 담겨 반려되는지 확인.
 
