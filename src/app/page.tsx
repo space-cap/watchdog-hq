@@ -7,9 +7,10 @@ import { APICard, HealthStatusTarget } from '@/components/APICard';
 import { RegisterModal } from '@/components/RegisterModal';
 import { AlertSettingsModal } from '@/components/AlertSettingsModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LandingHero } from '@/components/LandingHero';
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status: authStatus } = useSession();
   const [activeTab, setActiveTab] = useState<'server-tab' | 'health-tab'>('health-tab');
   const [targets, setTargets] = useState<HealthStatusTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,6 +70,7 @@ export default function DashboardPage() {
   };
 
   const planTier = (session?.user as any)?.planTier || 'Free';
+  const isLoggedIn = !!session?.user || isAdmin;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col">
@@ -120,123 +122,134 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="px-3.5 py-1.5 rounded-full text-xs font-bold theme-text-main bg-white hover:bg-slate-100 border border-slate-300 shadow-sm transition-colors"
+                className="px-4 py-2 rounded-full text-xs font-bold theme-text-main bg-white hover:bg-slate-100 border border-slate-300 shadow-sm transition-colors"
               >
                 로그인
               </Link>
               <Link
                 href="/register"
-                className="px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 transition-all shadow-md"
+                className="px-4 py-2 rounded-full text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 transition-all shadow-md"
               >
-                회원가입
+                무료 회원가입
               </Link>
             </div>
           )}
 
-          <div className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-400 flex items-center gap-2 shadow-sm">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" />
-            Active Polling
-          </div>
+          {isLoggedIn && (
+            <div className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-400 flex items-center gap-2 shadow-sm">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" />
+              Active Polling
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Tab Navigation & Action Bar */}
-      <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {/* Navigation Tabs */}
-        <nav className="flex gap-2 p-1.5 rounded-xl bg-slate-200 border border-slate-300 backdrop-blur-md">
-          <button
-            onClick={() => setActiveTab('health-tab')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === 'health-tab'
-                ? 'bg-white text-cyan-900 border border-cyan-500 shadow-sm'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
-            }`}
-          >
-            <span>📡</span> 서비스 API 헬스체크
-          </button>
-          <button
-            onClick={() => setActiveTab('server-tab')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === 'server-tab'
-                ? 'bg-white text-cyan-900 border border-cyan-500 shadow-sm'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
-            }`}
-          >
-            <span>🖥️</span> 서버 자원 모니터링
-          </button>
-        </nav>
+      {/* Main Content Area: Conditional Rendering based on Authentication */}
+      {isLoggedIn ? (
+        /* ================= AUTHENTICATED USER CONSOLE ================= */
+        <div className="flex-1 flex flex-col">
+          {/* Tab Navigation & Action Bar */}
+          <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            {/* Navigation Tabs */}
+            <nav className="flex gap-2 p-1.5 rounded-xl bg-slate-200 border border-slate-300 backdrop-blur-md">
+              <button
+                onClick={() => setActiveTab('health-tab')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                  activeTab === 'health-tab'
+                    ? 'bg-white text-cyan-900 border border-cyan-500 shadow-sm'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+                }`}
+              >
+                <span>📡</span> 서비스 API 헬스체크
+              </button>
+              <button
+                onClick={() => setActiveTab('server-tab')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                  activeTab === 'server-tab'
+                    ? 'bg-white text-cyan-900 border border-cyan-500 shadow-sm'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+                }`}
+              >
+                <span>🖥️</span> 서버 자원 모니터링
+              </button>
+            </nav>
 
-        {/* Action Buttons (Admin / Logged-in User Only) */}
-        {(isAdmin || session?.user) && activeTab === 'health-tab' && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsAlertModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold theme-text-main bg-white hover:bg-slate-100 border border-slate-300 transition-all shadow-sm flex items-center gap-1.5"
-            >
-              <span>🔔</span> 알림 채널 설정
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 rounded-xl text-xs font-black text-white bg-cyan-600 hover:bg-cyan-700 transition-all shadow-md flex items-center gap-1.5"
-            >
-              <span>➕</span> API 헬스체크 등록
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Tab Content Display */}
-      <main className="mt-6 flex-1">
-        {activeTab === 'health-tab' ? (
-          <div>
-            {isLoading ? (
-              <div className="py-20 text-center theme-text-muted text-sm font-bold animate-pulse">
-                실시간 가용성 데이터를 동기화하는 중...
-              </div>
-            ) : targets.length === 0 ? (
-              <div className="theme-card p-12 text-center my-8 max-w-lg mx-auto">
-                <div className="text-4xl mb-3">📡</div>
-                <h3 className="theme-text-main font-black text-base mb-1">
-                  등록된 헬스체크 대상이 없습니다.
-                </h3>
-                <p className="theme-text-sub text-xs mb-4 font-semibold">
-                  새로운 API 또는 웹사이트 URL을 추가하여 실시간 감시를 시작하세요.
-                </p>
-                {(isAdmin || session?.user) && (
-                  <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 transition-colors"
-                  >
-                    첫 헬스체크 등록하기
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {targets.map((target) => (
-                  <APICard
-                    key={target.id}
-                    target={target}
-                    isAdmin={isAdmin || !!session?.user}
-                    onDelete={handleDeleteTarget}
-                  />
-                ))}
+            {/* Action Buttons */}
+            {activeTab === 'health-tab' && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsAlertModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold theme-text-main bg-white hover:bg-slate-100 border border-slate-300 transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <span>🔔</span> 알림 채널 설정
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-4 py-2 rounded-xl text-xs font-black text-white bg-cyan-600 hover:bg-cyan-700 transition-all shadow-md flex items-center gap-1.5"
+                >
+                  <span>➕</span> API 헬스체크 등록
+                </button>
               </div>
             )}
           </div>
-        ) : (
-          /* Server Resources Monitor Tab Placeholder */
-          <div className="theme-card p-10 text-center my-6">
-            <div className="text-4xl mb-3">🖥️</div>
-            <h3 className="theme-text-main font-black text-base mb-1">
-              에이전트 자원 수집 연동 디스플레이
-            </h3>
-            <p className="theme-text-sub text-xs max-w-md mx-auto font-semibold">
-              분산 등록된 `agent` 수집기로부터 전송받은 CPU, Memory, Disk 메트릭 분석 가시화 탭입니다.
-            </p>
-          </div>
-        )}
-      </main>
+
+          {/* Tab Content Display */}
+          <main className="mt-6 flex-1">
+            {activeTab === 'health-tab' ? (
+              <div>
+                {isLoading ? (
+                  <div className="py-20 text-center theme-text-muted text-sm font-bold animate-pulse">
+                    실시간 가용성 데이터를 동기화하는 중...
+                  </div>
+                ) : targets.length === 0 ? (
+                  <div className="theme-card p-12 text-center my-8 max-w-lg mx-auto">
+                    <div className="text-4xl mb-3">📡</div>
+                    <h3 className="theme-text-main font-black text-base mb-1">
+                      등록된 헬스체크 대상이 없습니다.
+                    </h3>
+                    <p className="theme-text-sub text-xs mb-4 font-semibold">
+                      새로운 API 또는 웹사이트 URL을 추가하여 실시간 감시를 시작하세요.
+                    </p>
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="px-4 py-2 rounded-lg text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 transition-colors"
+                    >
+                      첫 헬스체크 등록하기
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {targets.map((target) => (
+                      <APICard
+                        key={target.id}
+                        target={target}
+                        isAdmin={isAdmin || !!session?.user}
+                        onDelete={handleDeleteTarget}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Server Resources Monitor Tab Placeholder */
+              <div className="theme-card p-10 text-center my-6">
+                <div className="text-4xl mb-3">🖥️</div>
+                <h3 className="theme-text-main font-black text-base mb-1">
+                  에이전트 자원 수집 연동 디스플레이
+                </h3>
+                <p className="theme-text-sub text-xs max-w-md mx-auto font-semibold">
+                  분산 등록된 `agent` 수집기로부터 전송받은 CPU, Memory, Disk 메트릭 분석 가시화 탭입니다.
+                </p>
+              </div>
+            )}
+          </main>
+        </div>
+      ) : (
+        /* ================= UNAUTHENTICATED SAAS LANDING PAGE ================= */
+        <main className="flex-1 mt-6">
+          <LandingHero />
+        </main>
+      )}
 
       {/* Modal for Target Registration */}
       <RegisterModal
