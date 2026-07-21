@@ -80,6 +80,13 @@ async function initSqliteTables() {
 
     isSqliteInitialized = true;
     console.log('✅ Local SQLite database (watchdog.db) initialized successfully.');
+
+    // Migration helper for existing watchdog.db files created before password_hash was added
+    try {
+      await sqliteClient.execute('ALTER TABLE users ADD COLUMN password_hash TEXT;');
+    } catch {
+      // Column already exists
+    }
   } catch (error) {
     console.error('❌ Failed to initialize SQLite tables:', error);
   }

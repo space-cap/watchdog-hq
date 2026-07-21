@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
           status: 'success',
           user: {
             id: userId,
-            email: newUsers[0].email,
-            name: newUsers[0].name,
+            email: newUsers[0].email || normalizedEmail,
+            name: newUsers[0].name || name || normalizedEmail.split('@')[0],
           },
         },
         { status: 201 }
