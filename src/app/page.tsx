@@ -8,6 +8,7 @@ import { RegisterModal } from '@/components/RegisterModal';
 import { AlertSettingsModal } from '@/components/AlertSettingsModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LandingHero } from '@/components/LandingHero';
+import { AgentMonitorTab } from '@/components/AgentMonitorTab';
 
 export default function DashboardPage() {
   const { data: session, status: authStatus } = useSession();
@@ -135,7 +136,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {isLoggedIn && (
+          {/* Active Polling indicator – only for logged-in users */}
+          {session?.user && (
             <div className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-400 flex items-center gap-2 shadow-sm">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-ping" />
               Active Polling
@@ -231,16 +233,8 @@ export default function DashboardPage() {
                 )}
               </div>
             ) : (
-              /* Server Resources Monitor Tab Placeholder */
-              <div className="theme-card p-10 text-center my-6">
-                <div className="text-4xl mb-3">🖥️</div>
-                <h3 className="theme-text-main font-black text-base mb-1">
-                  에이전트 자원 수집 연동 디스플레이
-                </h3>
-                <p className="theme-text-sub text-xs max-w-md mx-auto font-semibold">
-                  분산 등록된 `agent` 수집기로부터 전송받은 CPU, Memory, Disk 메트릭 분석 가시화 탭입니다.
-                </p>
-              </div>
+              /* Server Resources Monitor Tab – Live Agent Data */
+              <AgentMonitorTab />
             )}
           </main>
         </div>

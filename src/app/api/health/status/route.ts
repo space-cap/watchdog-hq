@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const dbTargets = await queryDB<any>(
       `SELECT t.id, t.name, t.url, t.interval_seconds
        FROM health_targets t
-       WHERE t.is_active = true
+       WHERE (t.is_active = 1 OR t.is_active = true)
        ORDER BY t.created_at DESC`
     );
 

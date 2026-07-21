@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     try {
       const dbUserId = userId === 'admin' ? null : userId;
       const rows = await queryDB<any>(
-        'INSERT INTO alert_channels (user_id, channel_type, destination, is_verified) VALUES ($1, $2, $3, true) RETURNING id',
+        'INSERT INTO alert_channels (user_id, channel_type, destination, is_verified) VALUES ($1, $2, $3, 1) RETURNING id',
         [dbUserId, channel_type, destination]
       );
       if (rows && rows[0]) {

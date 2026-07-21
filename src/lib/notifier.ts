@@ -195,21 +195,26 @@ export async function dispatchAlerts(
 
   let channels: any[] = [];
 
-  // Query channels from PostgreSQL if userId is present
+  // Query channels from DB (SQLite-compatible: is_verified = 1 or true)
   try {
     if (userId) {
       channels = await queryDB(
-        'SELECT channel_type, destination FROM alert_channels WHERE user_id = $1 AND is_verified = true',
+        'SELECT channel_type, destination FROM alert_channels WHERE user_id = $1 AND (is_verified = 1 OR is_verified = true)',
         [userId]
       );
     } else {
       channels = await queryDB(
-        'SELECT channel_type, destination FROM alert_channels WHERE is_verified = true'
+        'SELECT channel_type, destination FROM alert_channels WHERE (is_verified = 1 OR is_verified = true)'
       );
     }
+
+    // If DB returned nothing, fall back to in-memory channels
+    if (!channels || channels.length === 0) {
+      channels = [...memoryStoreAlertChannels];
+    }
   } catch {
-    // Memory store fallback channel check
-    channels = memoryStoreAlertChannels;
+    // Memory store fallback channel check on DB error
+    channels = [...memoryStoreAlertChannels];
   }
 
   for (const ch of channels) {
