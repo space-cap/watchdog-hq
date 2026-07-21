@@ -45,11 +45,12 @@ export const authOptions: NextAuthOptions = {
             throw new Error('등록되지 않은 이메일 계정입니다.');
           }
 
-          if (!user.password_hash) {
+          const targetHash = user.password_hash || user.password;
+          if (!targetHash) {
             throw new Error('소셜 로그인으로 가입된 계정입니다. 소셜 버튼으로 로그인해주세요.');
           }
 
-          const isValid = await bcrypt.compare(credentials.password, user.password_hash);
+          const isValid = await bcrypt.compare(credentials.password, targetHash);
           if (!isValid) {
             throw new Error('비밀번호가 일치하지 않습니다.');
           }

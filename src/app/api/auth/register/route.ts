@@ -38,10 +38,10 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user into PostgreSQL
+    // Insert user into DB
     const newUsers = await queryDB<any>(
-      'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id, email, name',
-      [normalizedEmail, name || normalizedEmail.split('@')[0], hashedPassword]
+      'INSERT INTO users (email, name, password, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, email, name',
+      [normalizedEmail, name || normalizedEmail.split('@')[0], hashedPassword, hashedPassword]
     );
 
     if (newUsers && newUsers[0]) {
