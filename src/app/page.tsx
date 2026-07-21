@@ -5,14 +5,16 @@ import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { APICard, HealthStatusTarget } from '@/components/APICard';
 import { RegisterModal } from '@/components/RegisterModal';
+import { AlertSettingsModal } from '@/components/AlertSettingsModal';
 
 export default function DashboardPage() {
-  const { data: session, status: authStatus } = useSession();
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<'server-tab' | 'health-tab'>('health-tab');
   const [targets, setTargets] = useState<HealthStatusTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
 
   // Fetch status list
   const fetchStatus = useCallback(async () => {
@@ -160,14 +162,22 @@ export default function DashboardPage() {
           </button>
         </nav>
 
-        {/* Action Button (Admin / Logged-in User Only) */}
+        {/* Action Buttons (Admin / Logged-in User Only) */}
         {(isAdmin || session?.user) && activeTab === 'health-tab' && (
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-blue-400 hover:from-cyan-300 hover:to-blue-300 transition-all shadow-lg shadow-cyan-500/25 flex items-center gap-1.5"
-          >
-            <span>➕</span> API 헬스체크 등록
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsAlertModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-200 bg-slate-900/80 hover:bg-slate-800 border border-white/10 transition-all shadow-md flex items-center gap-1.5"
+            >
+              <span>🔔</span> 알림 채널 설정
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-blue-400 hover:from-cyan-300 hover:to-blue-300 transition-all shadow-lg shadow-cyan-500/25 flex items-center gap-1.5"
+            >
+              <span>➕</span> API 헬스체크 등록
+            </button>
+          </div>
         )}
       </div>
 
@@ -229,6 +239,12 @@ export default function DashboardPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={fetchStatus}
+      />
+
+      {/* Modal for Alert Channel Settings */}
+      <AlertSettingsModal
+        isOpen={isAlertModalOpen}
+        onClose={() => setIsAlertModalOpen(false)}
       />
 
       {/* Page Footer */}

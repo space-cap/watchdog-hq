@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { queryDB, memoryStore } from '@/lib/db';
+import { dispatchAlerts } from '@/lib/notifier';
 
 const CHECKER_TOKEN = process.env.CHECKER_TOKEN || 'watchdog-secret-token';
 
@@ -11,6 +12,9 @@ interface ReportItem {
   error_message?: string;
   timestamp?: string;
 }
+
+// In-memory cache for target status transition detection (targetId -> isSuccess)
+const targetStatusCache = new Map<number, boolean>();
 
 export async function POST(request: NextRequest) {
   const token = request.headers.get('X-Checker-Token');
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try storing in PostgreSQL
+    // Process DB insertion & state transition alerts
     let dbSuccess = false;
     try {
       for (const item of reports) {
@@ -52,6 +56,24 @@ export async function POST(request: NextRequest) {
       dbSuccess = true;
     } catch {
       dbSuccess = false;
+    }
+
+    // Transition detection & Alert Trigger
+    for (const item of reports) {
+      const prevSuccess = targetStatusCache.get(item.target_id);
+
+      if (prevSuccess === undefined) {
+        // Initialize status cache: assume initial state was success (ONLINE)
+        targetStatusCache.set(item.target_id, true);
+        if (!item.is_success) {
+          // If initial check fails, trigger transition alert right away
+          triggerTransitionAlert(item);
+        }
+      } else if (prevSuccess !== item.is_success) {
+        // State transition detected! (ONLINE -> OFFLINE or OFFLINE -> ONLINE)
+        targetStatusCache.set(item.target_id, item.is_success);
+        triggerTransitionAlert(item);
+      }
     }
 
     // Always keep memoryStore updated for seamless development UI updates
@@ -74,4 +96,46 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+async function triggerTransitionAlert(item: ReportItem) {
+  let targetName = `Target #${item.target_id}`;
+  let targetUrl = 'http://localhost';
+  let userId: string | undefined = undefined;
+
+  try {
+    const targets = await queryDB<any>(
+      'SELECT name, url, user_id FROM health_targets WHERE id = $1',
+      [item.target_id]
+    );
+    if (targets && targets[0]) {
+      targetName = targets[0].name;
+      targetUrl = targets[0].url;
+      userId = targets[0].user_id;
+    } else {
+      const memTarget = memoryStore.targets.find((t) => t.id === item.target_id);
+      if (memTarget) {
+        targetName = memTarget.name;
+        targetUrl = memTarget.url;
+      }
+    }
+  } catch {
+    const memTarget = memoryStore.targets.find((t) => t.id === item.target_id);
+    if (memTarget) {
+      targetName = memTarget.name;
+      targetUrl = memTarget.url;
+    }
+  }
+
+  // Asynchronously dispatch alerts
+  dispatchAlerts(
+    item.target_id,
+    targetName,
+    targetUrl,
+    item.is_success,
+    item.status_code,
+    item.latency_ms,
+    item.error_message,
+    userId
+  );
 }
