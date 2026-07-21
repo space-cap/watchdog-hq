@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_vpI7DBm0oRew@ep-young-breeze-aoz29ou7.c-2.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require';
+const connectionString = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_vpI7DBm0oRew@ep-young-breeze-aoz29ou7.c-2.ap-southeast-1.aws.neon.tech:5432/watchdogdb?sslmode=require';
 
 export const pool = new Pool({
   connectionString,
