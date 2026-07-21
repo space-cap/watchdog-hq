@@ -34,29 +34,9 @@ export interface MemoryLog {
 }
 
 class MemoryStore {
-  targets: MemoryTarget[] = [
-    {
-      id: 1,
-      name: 'Local Front (Vite)',
-      url: 'http://localhost:5173/api/health',
-      interval_seconds: 5,
-      timeout_seconds: 2,
-      is_active: true,
-      created_at: new Date(),
-    },
-    {
-      id: 2,
-      name: 'Local Backend (Redwood)',
-      url: 'http://localhost:8910/api/health',
-      interval_seconds: 5,
-      timeout_seconds: 2,
-      is_active: true,
-      created_at: new Date(),
-    },
-  ];
-
+  targets: MemoryTarget[] = [];
   logs: MemoryLog[] = [];
-  private nextTargetId = 3;
+  private nextTargetId = 1;
   private nextLogId = 1;
 
   getTargets(): MemoryTarget[] {
