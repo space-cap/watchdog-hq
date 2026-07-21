@@ -1,18 +1,91 @@
 import { Pool } from 'pg';
+import { createClient, Client as LibSqlClient } from '@libsql/client';
 
+// Determine Database Mode: 'sqlite' (default for dev) or 'postgres'
+const DB_TYPE = (process.env.DATABASE_TYPE || (process.env.NODE_ENV === 'production' ? 'postgres' : 'sqlite')).toLowerCase();
+
+// PostgreSQL Connection Pool (Used in production or when DATABASE_TYPE=postgres)
 const connectionString = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_vpI7DBm0oRew@ep-young-breeze-aoz29ou7.c-2.ap-southeast-1.aws.neon.tech:5432/watchdogdb?sslmode=require';
 
 export const pool = new Pool({
   connectionString,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
 });
 
-// In-memory fallback storage for initial development / mock mode when DB is not yet running
+// SQLite Client (Used in development to prevent Cloud PG rate limits)
+let sqliteClient: LibSqlClient | null = null;
+let isSqliteInitialized = false;
+
+if (DB_TYPE === 'sqlite') {
+  sqliteClient = createClient({
+    url: 'file:watchdog.db',
+  });
+}
+
+/**
+ * Initializes local SQLite tables automatically if they do not exist.
+ */
+async function initSqliteTables() {
+  if (!sqliteClient || isSqliteInitialized) return;
+
+  try {
+    await sqliteClient.batch([
+      `CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT,
+        password_hash TEXT,
+        name TEXT,
+        plan_tier TEXT DEFAULT 'Free',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+      `CREATE TABLE IF NOT EXISTS subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        plan_tier TEXT DEFAULT 'Free',
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+      `CREATE TABLE IF NOT EXISTS health_targets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        name TEXT NOT NULL,
+        url TEXT NOT NULL,
+        interval_seconds INTEGER DEFAULT 60,
+        timeout_seconds INTEGER DEFAULT 5,
+        is_active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+      `CREATE TABLE IF NOT EXISTS health_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        target_id INTEGER NOT NULL,
+        status_code INTEGER,
+        latency_ms INTEGER DEFAULT 0,
+        is_success INTEGER DEFAULT 1,
+        error_message TEXT DEFAULT '',
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+      `CREATE TABLE IF NOT EXISTS alert_channels (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        channel_type TEXT NOT NULL,
+        webhook_url TEXT NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+    ]);
+
+    isSqliteInitialized = true;
+    console.log('✅ Local SQLite database (watchdog.db) initialized successfully.');
+  } catch (error) {
+    console.error('❌ Failed to initialize SQLite tables:', error);
+  }
+}
+
+// In-memory fallback storage
 export interface MemoryTarget {
   id: number;
   name: string;
@@ -112,13 +185,62 @@ class MemoryStore {
 
 export const memoryStore = new MemoryStore();
 
-// Helper to query with automatic fallback to memory store if DB is unavailable
-export async function queryDB<T>(text: string, params?: any[]): Promise<T[]> {
+/**
+ * Universal Database Query Helper (Dual Engine: SQLite for Dev, PostgreSQL for Prod)
+ */
+export async function queryDB<T>(text: string, params: any[] = []): Promise<T[]> {
+  // 1. SQLite Driver Mode
+  if (DB_TYPE === 'sqlite' && sqliteClient) {
+    try {
+      await initSqliteTables();
+
+      // Convert PG style placeholders ($1, $2) to SQLite style (?)
+      const sqliteSql = text.replace(/\$\d+/g, '?');
+
+      // Convert boolean params (true/false) to SQLite integers (1/0)
+      const formattedParams = params.map((p) => {
+        if (typeof p === 'boolean') return p ? 1 : 0;
+        if (p instanceof Date) return p.toISOString();
+        return p;
+      });
+
+      const res = await sqliteClient.execute({
+        sql: sqliteSql,
+        args: formattedParams,
+      });
+
+      // Map rows to plain objects
+      const rows = res.rows.map((row) => {
+        const obj: any = {};
+        for (const col of res.columns) {
+          let val = (row as any)[col];
+          // Convert SQLite integer boolean representation to JS boolean for consistency
+          if (col === 'is_active' || col === 'is_success') {
+            val = val === 1 || val === true;
+          }
+          obj[col] = val;
+        }
+        return obj;
+      });
+
+      // If INSERT query and RETURNING was requested but rows is empty, return lastInsertRowid
+      if (rows.length === 0 && res.lastInsertRowid !== undefined && res.lastInsertRowid !== null) {
+        return [{ id: Number(res.lastInsertRowid) }] as T[];
+      }
+
+      return rows as T[];
+    } catch (err) {
+      console.error('SQLite query error:', err);
+      return [] as T[];
+    }
+  }
+
+  // 2. PostgreSQL Driver Mode (Production)
   try {
     const res = await pool.query(text, params);
     return res.rows;
   } catch (err) {
-    // Graceful fallback to memory store if PostgreSQL connection fails
+    console.error('PostgreSQL query error:', err);
     return [] as T[];
   }
 }
