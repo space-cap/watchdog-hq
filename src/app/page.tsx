@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { APICard, HealthStatusTarget } from '@/components/APICard';
 import { RegisterModal } from '@/components/RegisterModal';
 import { AlertSettingsModal } from '@/components/AlertSettingsModal';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -72,19 +73,19 @@ export default function DashboardPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col">
       {/* Top Main Header */}
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-white/10 gap-4">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-slate-200 dark:border-white/10 gap-4">
         <div className="flex items-center gap-3">
           <Link href="/" className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20 hover:scale-105 transition-transform">
             W
           </Link>
           <div>
-            <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
               watchdog-hq
-              <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 font-mono">
                 v1.0 SaaS
               </span>
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               분산 모니터링 & 카카오톡 실시간 가용성 관제 센터
             </p>
           </div>
@@ -92,21 +93,24 @@ export default function DashboardPage() {
 
         {/* System & Session Indicators */}
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Theme Toggle Button */}
+          <ThemeToggle />
+
           {session?.user ? (
             /* Logged in User Profile Bar */
-            <div className="flex items-center gap-3 bg-slate-900/80 p-1.5 pl-3.5 rounded-full border border-white/10">
+            <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-900/80 p-1.5 pl-3.5 rounded-full border border-slate-200 dark:border-white/10">
               <div className="flex flex-col text-left">
-                <span className="text-xs font-semibold text-slate-100 flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                   {session.user.name || session.user.email}
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-mono font-normal">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-mono font-normal">
                     {planTier}
                   </span>
                 </span>
-                <span className="text-[10px] text-slate-400">{session.user.email}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">{session.user.email}</span>
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="px-3 py-1.5 rounded-full bg-pink-950/40 text-pink-300 border border-pink-500/20 text-xs font-medium hover:bg-pink-900/50 transition-colors"
+                className="px-3 py-1.5 rounded-full bg-red-100 dark:bg-pink-950/40 text-red-600 dark:text-pink-300 border border-red-200 dark:border-pink-500/20 text-xs font-medium hover:bg-red-200 dark:hover:bg-pink-900/50 transition-colors"
               >
                 로그아웃
               </button>
@@ -116,7 +120,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-200 bg-slate-900/80 hover:bg-slate-800 border border-white/10 transition-colors"
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-900/80 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 transition-colors"
               >
                 로그인
               </Link>
@@ -129,8 +133,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-cyan-950/40 text-cyan-300 border border-cyan-500/20 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+          <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/20 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-cyan-500 animate-ping" />
             Active Polling
           </div>
         </div>
@@ -139,13 +143,13 @@ export default function DashboardPage() {
       {/* Tab Navigation & Action Bar */}
       <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         {/* Navigation Tabs */}
-        <nav className="flex gap-2 p-1 rounded-xl bg-slate-900/60 border border-white/5 backdrop-blur-md">
+        <nav className="flex gap-2 p-1 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 backdrop-blur-md">
           <button
             onClick={() => setActiveTab('health-tab')}
             className={`px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${
               activeTab === 'health-tab'
-                ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 shadow-md'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                ? 'bg-white dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-blue-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 shadow-md'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/5'
             }`}
           >
             <span>📡</span> 서비스 API 헬스체크
@@ -154,8 +158,8 @@ export default function DashboardPage() {
             onClick={() => setActiveTab('server-tab')}
             className={`px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${
               activeTab === 'server-tab'
-                ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/30 shadow-md'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                ? 'bg-white dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-blue-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 shadow-md'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/5'
             }`}
           >
             <span>🖥️</span> 서버 자원 모니터링
@@ -167,7 +171,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsAlertModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-200 bg-slate-900/80 hover:bg-slate-800 border border-white/10 transition-all shadow-md flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-white/10 transition-all shadow-sm flex items-center gap-1.5"
             >
               <span>🔔</span> 알림 채널 설정
             </button>
@@ -186,16 +190,16 @@ export default function DashboardPage() {
         {activeTab === 'health-tab' ? (
           <div>
             {isLoading ? (
-              <div className="py-20 text-center text-slate-500 text-sm animate-pulse">
+              <div className="py-20 text-center text-slate-400 text-sm animate-pulse">
                 실시간 가용성 데이터를 동기화하는 중...
               </div>
             ) : targets.length === 0 ? (
               <div className="premium-glass-card p-12 text-center my-8 max-w-lg mx-auto">
                 <div className="text-4xl mb-3">📡</div>
-                <h3 className="text-slate-200 font-medium text-base mb-1">
+                <h3 className="text-slate-800 dark:text-slate-200 font-medium text-base mb-1">
                   등록된 헬스체크 대상이 없습니다.
                 </h3>
-                <p className="text-slate-400 text-xs mb-4">
+                <p className="text-slate-500 dark:text-slate-400 text-xs mb-4">
                   새로운 API 또는 웹사이트 URL을 추가하여 실시간 감시를 시작하세요.
                 </p>
                 {(isAdmin || session?.user) && (
@@ -224,10 +228,10 @@ export default function DashboardPage() {
           /* Server Resources Monitor Tab Placeholder */
           <div className="premium-glass-card p-10 text-center my-6">
             <div className="text-4xl mb-3">🖥️</div>
-            <h3 className="text-slate-200 font-medium text-base mb-1">
+            <h3 className="text-slate-800 dark:text-slate-200 font-medium text-base mb-1">
               에이전트 자원 수집 연동 디스플레이
             </h3>
-            <p className="text-slate-400 text-xs max-w-md mx-auto">
+            <p className="text-slate-500 dark:text-slate-400 text-xs max-w-md mx-auto">
               분산 등록된 `agent` 수집기로부터 전송받은 CPU, Memory, Disk 메트릭 분석 가시화 탭입니다.
             </p>
           </div>
@@ -248,7 +252,7 @@ export default function DashboardPage() {
       />
 
       {/* Page Footer */}
-      <footer className="mt-12 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+      <footer className="mt-12 pt-6 border-t border-slate-200 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
         <div>© 2026 watchdog-hq. All rights reserved.</div>
         <div className="flex items-center gap-4">
           <span>한국형 SaaS 관제</span>
