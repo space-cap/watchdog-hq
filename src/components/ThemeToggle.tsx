@@ -22,18 +22,18 @@ export function ThemeToggle() {
     <button
       onClick={toggleTheme}
       type="button"
-      className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors border border-slate-300 dark:border-slate-700 text-xs font-semibold flex items-center gap-1.5"
+      className="px-3 py-1.5 rounded-full bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-slate-300 dark:border-white/10 text-xs font-bold shadow-sm flex items-center gap-1.5"
       title={theme === 'light' ? '다크 테마로 전환' : '라이트 테마로 전환'}
     >
       {theme === 'light' ? (
         <>
           <span>☀️</span>
-          <span className="hidden sm:inline">라이트</span>
+          <span>라이트</span>
         </>
       ) : (
         <>
           <span>🌙</span>
-          <span className="hidden sm:inline">다크</span>
+          <span>다크</span>
         </>
       )}
     </button>
