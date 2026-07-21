@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     try {
       const rows = await queryDB<any>(
         `INSERT INTO health_targets (user_id, name, url, interval_seconds, timeout_seconds, is_active)
-         VALUES ($1, $2, $3, $4, $5, true)
+         VALUES ($1, $2, $3, $4, $5, 1)
          RETURNING id`,
         [auth.userId, name, url, interval, timeout]
       );
