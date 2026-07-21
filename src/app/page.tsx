@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
 import { APICard, HealthStatusTarget } from '@/components/APICard';
 import { RegisterModal } from '@/components/RegisterModal';
 
 export default function DashboardPage() {
+  const { data: session, status: authStatus } = useSession();
   const [activeTab, setActiveTab] = useState<'server-tab' | 'health-tab'>('health-tab');
   const [targets, setTargets] = useState<HealthStatusTarget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,11 +23,11 @@ export default function DashboardPage() {
       const data: HealthStatusTarget[] = await response.json();
       setTargets(data);
 
-      // Detect admin privilege if at least one URL is not masked
+      // Detect admin privilege if token is active or user session exists
       const hasUnmaskedURL = data.some(
         (item) => item.url && item.url !== 'Hidden (Admin Only)'
       );
-      if (hasUnmaskedURL) {
+      if (hasUnmaskedURL || session?.user) {
         setIsAdmin(true);
       }
     } catch (error) {
@@ -32,7 +35,7 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [session]);
 
   // Poll every 5 seconds
   useEffect(() => {
@@ -62,14 +65,16 @@ export default function DashboardPage() {
     }
   };
 
+  const planTier = (session?.user as any)?.planTier || 'Free';
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col">
       {/* Top Main Header */}
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-white/10 gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20">
+          <Link href="/" className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20 hover:scale-105 transition-transform">
             W
-          </div>
+          </Link>
           <div>
             <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
               watchdog-hq
@@ -84,14 +89,41 @@ export default function DashboardPage() {
         </div>
 
         {/* System & Session Indicators */}
-        <div className="flex items-center gap-3">
-          {isAdmin ? (
-            <div className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-              <span>🔐</span> 관리자 세션 활성
+        <div className="flex items-center gap-3 flex-wrap">
+          {session?.user ? (
+            /* Logged in User Profile Bar */
+            <div className="flex items-center gap-3 bg-slate-900/80 p-1.5 pl-3.5 rounded-full border border-white/10">
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-semibold text-slate-100 flex items-center gap-1.5">
+                  {session.user.name || session.user.email}
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-mono font-normal">
+                    {planTier}
+                  </span>
+                </span>
+                <span className="text-[10px] text-slate-400">{session.user.email}</span>
+              </div>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="px-3 py-1.5 rounded-full bg-pink-950/40 text-pink-300 border border-pink-500/20 text-xs font-medium hover:bg-pink-900/50 transition-colors"
+              >
+                로그아웃
+              </button>
             </div>
           ) : (
-            <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800/80 text-slate-400 border border-white/5 flex items-center gap-1.5">
-              <span>👁️</span> 일반 방문자 (Viewer)
+            /* Guest / Visitor Login Actions */
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-200 bg-slate-900/80 hover:bg-slate-800 border border-white/10 transition-colors"
+              >
+                로그인
+              </Link>
+              <Link
+                href="/register"
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-blue-400 hover:from-cyan-300 hover:to-blue-300 transition-all shadow-md shadow-cyan-500/20"
+              >
+                회원가입
+              </Link>
             </div>
           )}
 
@@ -128,8 +160,8 @@ export default function DashboardPage() {
           </button>
         </nav>
 
-        {/* Action Button (Admin Only) */}
-        {isAdmin && activeTab === 'health-tab' && (
+        {/* Action Button (Admin / Logged-in User Only) */}
+        {(isAdmin || session?.user) && activeTab === 'health-tab' && (
           <button
             onClick={() => setIsModalOpen(true)}
             className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-gradient-to-r from-cyan-400 to-blue-400 hover:from-cyan-300 hover:to-blue-300 transition-all shadow-lg shadow-cyan-500/25 flex items-center gap-1.5"
@@ -156,7 +188,7 @@ export default function DashboardPage() {
                 <p className="text-slate-400 text-xs mb-4">
                   새로운 API 또는 웹사이트 URL을 추가하여 실시간 감시를 시작하세요.
                 </p>
-                {isAdmin && (
+                {(isAdmin || session?.user) && (
                   <button
                     onClick={() => setIsModalOpen(true)}
                     className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-colors"
@@ -171,7 +203,7 @@ export default function DashboardPage() {
                   <APICard
                     key={target.id}
                     target={target}
-                    isAdmin={isAdmin}
+                    isAdmin={isAdmin || !!session?.user}
                     onDelete={handleDeleteTarget}
                   />
                 ))}

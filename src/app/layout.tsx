@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   description: '전 세계 분산 노드 기반의 실시간 API 헬스체크 및 카카오톡/슬랙 장애 알림 서비스',
 };
 
+import { Providers } from '@/components/Providers';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,9 +33,11 @@ export default function RootLayout({
           <div className="aurora-blob-1" />
           <div className="aurora-blob-2" />
         </div>
-        <div className="relative z-10 min-h-screen flex flex-col">
-          {children}
-        </div>
+        <Providers>
+          <div className="relative z-10 min-h-screen flex flex-col">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );
