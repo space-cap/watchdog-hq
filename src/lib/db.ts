@@ -100,7 +100,7 @@ class MemoryStore {
     });
   }
 
-  getStatusList() {
+  getStatusList(isAdmin: boolean = true) {
     return this.targets.filter((t) => t.is_active).map((target) => {
       const targetLogs = this.logs
         .filter((l) => l.target_id === target.id)
@@ -117,7 +117,7 @@ class MemoryStore {
       return {
         id: target.id,
         name: target.name,
-        url: target.url,
+        url: isAdmin ? target.url : 'Hidden (Admin Only)',
         interval_seconds: target.interval_seconds,
         status,
         last_check: latestLog ? latestLog.timestamp.toISOString() : null,

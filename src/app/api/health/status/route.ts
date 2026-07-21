@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { queryDB, memoryStore } from '@/lib/db';
 
 const AUTH_TOKEN = process.env.AUTH_TOKEN || 'watchdog-secret-token';
 
-function isAdmin(request: NextRequest): boolean {
+async function checkIsAuthorized(request: NextRequest): Promise<boolean> {
+  const session = await getServerSession(authOptions);
+  if (session?.user) {
+    return true;
+  }
   const cookie = request.cookies.get('session_token');
   if (cookie && cookie.value === AUTH_TOKEN) {
     return true;
@@ -13,7 +19,7 @@ function isAdmin(request: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
-  const adminFlag = isAdmin(request);
+  const isAuthorized = await checkIsAuthorized(request);
 
   try {
     const dbTargets = await queryDB<any>(
@@ -47,7 +53,7 @@ export async function GET(request: NextRequest) {
         statusList.push({
           id: t.id,
           name: t.name,
-          url: adminFlag ? t.url : 'Hidden (Admin Only)',
+          url: isAuthorized ? t.url : 'Hidden (Admin Only)',
           interval_seconds: t.interval_seconds,
           status,
           last_check: latest ? latest.timestamp : null,
@@ -58,21 +64,12 @@ export async function GET(request: NextRequest) {
         });
       }
     } else {
-      // Memory Store fallback
-      statusList = memoryStore.getStatusList().map((item) => ({
-        ...item,
-        url: adminFlag ? item.url : 'Hidden (Admin Only)',
-      }));
+      // Memory Store Fallback
+      statusList = memoryStore.getStatusList(isAuthorized);
     }
 
     return NextResponse.json(statusList);
   } catch (error) {
-    // Memory store fallback
-    const statusList = memoryStore.getStatusList().map((item) => ({
-      ...item,
-      url: adminFlag ? item.url : 'Hidden (Admin Only)',
-    }));
-
-    return NextResponse.json(statusList);
+    return NextResponse.json(memoryStore.getStatusList(isAuthorized));
   }
 }
