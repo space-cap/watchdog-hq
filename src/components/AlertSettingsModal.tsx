@@ -25,6 +25,33 @@ export const AlertSettingsModal: React.FC<AlertSettingsModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [testingId, setTestingId] = useState<number | null>(null);
+
+  const handleTestChannel = async (channel: AlertChannel) => {
+    setTestingId(channel.id);
+    try {
+      const res = await fetch('/api/alerts/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel_type: channel.channel_type,
+          destination: channel.destination,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || '테스트 발송 실패');
+      }
+
+      alert(`🎉 테스트 발송 성공!\n'${channel.destination}' 주소로 메시지가 정상 전달되었습니다.`);
+    } catch (err) {
+      alert(`⚠️ 테스트 발송 실패: ${(err as Error).message}`);
+    } finally {
+      setTestingId(null);
+    }
+  };
 
   const fetchChannels = useCallback(async () => {
     setIsLoading(true);
@@ -236,13 +263,29 @@ export const AlertSettingsModal: React.FC<AlertSettingsModalProps> = ({
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteChannel(ch.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-pink-400 hover:bg-pink-500/10 transition-colors shrink-0"
-                      title="수신처 삭제"
-                    >
-                      🗑️
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        disabled={testingId === ch.id}
+                        onClick={() => handleTestChannel(ch)}
+                        className="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[11px] font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {testingId === ch.id ? (
+                          <span>발송 중...</span>
+                        ) : (
+                          <>
+                            <span>🧪</span> 테스트 발송
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteChannel(ch.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-pink-400 hover:bg-pink-500/10 transition-colors"
+                        title="수신처 삭제"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
